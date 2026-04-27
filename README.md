@@ -1,72 +1,33 @@
-# Block Destructive Bash Commands — Claude Code Pre-Tool-Use Hook
+# Pre-Tool-Use Security Hook for Claude Code
 
-拦截并阻止Claude Code执行危险bash命令，在命令真正执行前捕获。
+Blocks dangerous bash commands before they execute, protecting your system from accidental destruction.
 
-## 安装（2步）
+## Installation (2 commands)
 
 ```bash
-# 1. 创建hooks目录
-mkdir -p ~/.claude/hooks
-
-# 2. 复制脚本
-cp block_destructive.py ~/.claude/hooks/
+mkdir -p ~/.claude/hooks && cp block_destructive.py ~/.claude/hooks/
 chmod +x ~/.claude/hooks/block_destructive.py
 ```
 
-安装完成！Claude Code会自动检测hook并生效。
+Claude Code auto-detects hooks in `~/.claude/hooks/` and runs them on every `pre-tool-use` event.
 
-## 拦截规则
+## What it blocks
 
-### 🛑 危险系统命令（永远阻止）
-| 模式 | 示例 |
-|------|------|
-| 递归根目录删除 | `rm -rf /`, `rm -rf /home` |
-| 格式化磁盘 | `mkfs.ext4 /dev/sda` |
-| 磁盘覆写 | `dd if=/dev/zero of=/dev/sda` |
-| Fork炸弹 | `:(){ :|:& };:` |
+| Category | Examples |
+|----------|----------|
+| **Destructive** | `rm -rf /`, `mkfs`, `dd if=/dev/zero of=...` |
+| **SQL** | `DROP TABLE`, `DROP DATABASE`, `TRUNCATE`, `DELETE FROM` without WHERE |
+| **Git** | `git push --force`, `git reset --hard`, `git filter-branch` |
+| **Filesystem** | `chmod -R 0`, `shutdown`, `reboot` |
 
-### 🛑 危险数据库命令
-| 模式 | 示例 |
-|------|------|
-| 删库 | `DROP DATABASE production` |
-| 删表 | `DROP TABLE users` |
-| 无WHERE删除 | `DELETE FROM users`（不允许） |
-| 截断 | `TRUNCATE orders` |
+## Logging
 
-### 🛑 危险Git命令
-| 模式 | 示例 |
-|------|------|
-| 强制推送 | `git push --force` |
-| 重置历史 | `git reset --hard HEAD~5` |
-| 清理 | `git clean -fd` |
+All blocked attempts are logged to `~/.claude/hooks/blocked.log` with:
+- Timestamp
+- Attempted command
+- Project path
+- Blocked category
 
-### 🛑 危险文件系统命令
-| 模式 | 示例 |
-|------|------|
-| 拒绝访问 | `chmod -R 0 /` |
-| 磁盘直写 | `> /dev/sda` |
-| 关机重启 | `shutdown -h now`, `reboot` |
+## How it works
 
-## 日志
-
-所有拦截的命令记录在 `~/.claude/hooks/blocked.log`：
-
-```json
-{"timestamp":"2026-04-27T02:00:00Z","category":"git","command":"git push --force","project_path":"/home/user/project"}
-```
-
-## 不干扰正常命令
-
-以下常见命令 **不会被拦截**：
-- `npm install`, `pip install`
-- `git push`, `git pull`, `git commit`
-- `rm file.txt`, `rm -rf node_modules`
-- `mkdir`, `cp`, `mv`
-- `docker`, `kubectl`, `ssh`
-- `curl`, `wget`
-
-## 卸载
-
-```bash
-rm ~/.claude/hooks/block_destructive.py
-```
+Claude Code sends the proposed command as JSON via stdin. The hook parses it, checks against regex patterns, and returns `{"allow": false}` with a clear reason if the command is dangerous. Safe commands pass through without interference.
