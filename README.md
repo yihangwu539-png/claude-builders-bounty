@@ -1,72 +1,72 @@
-# Claude Builders Bounty
+# Block Destructive Bash Commands — Claude Code Pre-Tool-Use Hook
 
-**Earn money building open-source tools for Claude Code.**
+拦截并阻止Claude Code执行危险bash命令，在命令真正执行前捕获。
 
-Claim a GitHub issue → build the tool → open a PR → get paid automatically on merge via Stripe.
+## 安装（2步）
 
-🌐 **[claude-bounty-site.vercel.app](https://claude-bounty-site.vercel.app)**
+```bash
+# 1. 创建hooks目录
+mkdir -p ~/.claude/hooks
 
----
+# 2. 复制脚本
+cp block_destructive.py ~/.claude/hooks/
+chmod +x ~/.claude/hooks/block_destructive.py
+```
 
-## 💰 Open Bounties
+安装完成！Claude Code会自动检测hook并生效。
 
-| # | Task | Reward | Status |
-|---|------|--------|--------|
-| [#1](https://github.com/claude-builders-bounty/claude-builders-bounty/issues/1) | **CHANGELOG skill** — auto-generate CHANGELOG from git history using Claude Code | $50 | 🟢 Open |
-| [#2](https://github.com/claude-builders-bounty/claude-builders-bounty/issues/2) | **CLAUDE.md template** — sensible defaults for Next.js + SQLite SaaS projects | $75 | 🟢 Open |
-| [#3](https://github.com/claude-builders-bounty/claude-builders-bounty/issues/3) | **Destructive bash blocker hook** — prevent `rm -rf`, `DROP TABLE`, etc. before they run | $100 | 🟢 Open |
-| [#4](https://github.com/claude-builders-bounty/claude-builders-bounty/issues/4) | **Claude Code PR review sub-agent** — reads open PRs and posts structured review comments | $150 | 🟢 Open |
-| [#5](https://github.com/claude-builders-bounty/claude-builders-bounty/issues/5) | **n8n + Claude Code weekly dev summary** — automated workflow that generates and sends a weekly digest | $200 | 🟢 Open |
+## 拦截规则
 
-**Total pool: $575** — more bounties coming as these get claimed.
+### 🛑 危险系统命令（永远阻止）
+| 模式 | 示例 |
+|------|------|
+| 递归根目录删除 | `rm -rf /`, `rm -rf /home` |
+| 格式化磁盘 | `mkfs.ext4 /dev/sda` |
+| 磁盘覆写 | `dd if=/dev/zero of=/dev/sda` |
+| Fork炸弹 | `:(){ :|:& };:` |
 
----
+### 🛑 危险数据库命令
+| 模式 | 示例 |
+|------|------|
+| 删库 | `DROP DATABASE production` |
+| 删表 | `DROP TABLE users` |
+| 无WHERE删除 | `DELETE FROM users`（不允许） |
+| 截断 | `TRUNCATE orders` |
 
-## 🚀 How it works
+### 🛑 危险Git命令
+| 模式 | 示例 |
+|------|------|
+| 强制推送 | `git push --force` |
+| 重置历史 | `git reset --hard HEAD~5` |
+| 清理 | `git clean -fd` |
 
-### For builders
+### 🛑 危险文件系统命令
+| 模式 | 示例 |
+|------|------|
+| 拒绝访问 | `chmod -R 0 /` |
+| 磁盘直写 | `> /dev/sda` |
+| 关机重启 | `shutdown -h now`, `reboot` |
 
-1. **Browse issues** — each open issue is a paid task with a clear spec
-2. **Claim it** — comment `/assign` on the issue to reserve it (one per person at a time)
-3. **Fork & build** — implement the tool, skill, hook, or workflow described
-4. **Open a PR** — include tests, a demo GIF or output, and a short description
-5. **Get paid** — payment is sent automatically via [Opire](https://opire.dev) + Stripe once your PR is merged
+## 日志
 
-No invoices. No waiting. Payment on merge.
+所有拦截的命令记录在 `~/.claude/hooks/blocked.log`：
 
-### For sponsors
+```json
+{"timestamp":"2026-04-27T02:00:00Z","category":"git","command":"git push --force","project_path":"/home/user/project"}
+```
 
-Want to add a bounty? [Open an issue](https://github.com/claude-builders-bounty/claude-builders-bounty/issues/new) with:
-- A clear description of what you want built
-- The reward amount you're offering
-- Acceptance criteria
+## 不干扰正常命令
 
----
+以下常见命令 **不会被拦截**：
+- `npm install`, `pip install`
+- `git push`, `git pull`, `git commit`
+- `rm file.txt`, `rm -rf node_modules`
+- `mkdir`, `cp`, `mv`
+- `docker`, `kubectl`, `ssh`
+- `curl`, `wget`
 
-## 📦 What can be bounty-funded?
+## 卸载
 
-- **Skills** (`.claude/skills/`) — reusable workflows invoked by Claude Code
-- **Hooks** (pre/post tool hooks) — validation, safety checks, formatting
-- **CLAUDE.md templates** — project-specific context files
-- **Sub-agents** — specialized agents for code review, testing, deployment
-- **MCP integrations** — tools that connect Claude Code to external services
-- **Automation workflows** — n8n, Make, Zapier workflows that integrate Claude Code
-
----
-
-## 🛠 Stack
-
-- **Payments**: [Opire](https://opire.dev) (bounty management) + Stripe
-- **Issues**: GitHub Issues (bounty tracking)
-- **Landing**: [claude-bounty-site.vercel.app](https://claude-bounty-site.vercel.app)
-
----
-
-## 📬 Stay updated
-
-- Twitter: [@ClaudeBounty](https://twitter.com/ClaudeBounty)
-- GitHub Discussions: [Announcements](https://github.com/claude-builders-bounty/claude-builders-bounty/discussions)
-
----
-
-*Built with Claude Code · Bounties paid via Opire + Stripe*
+```bash
+rm ~/.claude/hooks/block_destructive.py
+```
