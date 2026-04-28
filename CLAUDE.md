@@ -80,7 +80,7 @@ project-root/
 
 - **Domain-based schema files** (`db/schema/`) mirror your business domains. Adding a feature means adding one schema file, one actions file, and one route group. No hunting across folders.
 - **Server Actions in `actions/`**, not inline in components. Actions are business logic — they deserve their own file, their own tests, and their own error handling. Inline actions in page files become unreadable after 3 exports.
-- **`lib/` for pure Sidekiq helpers** (auth config, Stripe client, email). These have zero React dependencies, so they stay fast and testable without jsdom.
+- **`lib/` for pure helpers** (auth config, Stripe client, email). These have zero React dependencies, so they stay fast and testable without jsdom.
 - **`components/` mirrors its audience**, not its type. `forms/` are form-specific; `ui/` are design-system primitives; `shared/` are cross-domain. This prevents the `components/` dumping ground problem.
 
 ---
